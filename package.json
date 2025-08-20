@@ -1,0 +1,47 @@
+{
+    "name": "@gwi42/sbom-utils",
+    "version": "1.0.3",
+    "description": "Two scripts for working with Software Bill of Materials (SBOM) files in CycloneDX or SPDX JSON formats",
+    "scripts": {
+        "clean": "del-cli dist gwi42*.tgz",
+        "build": "tsc",
+        "prepare": "npm run clean && npm run build",
+        "release": "npm publish --access public",
+        "create-sbom": "cyclonedx-npm --omit dev --output-file ./sbom.json",
+        "extract-licenses-local": "tsx ./src/extract_licenses.ts --file sbom.json",
+        "extract-licenses": "extract-licenses --file sbom.json"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/gwi42/sbom-utils.git"
+    },
+    "keywords": [
+        "sbom",
+        "cyclonedx",
+        "spdx",
+        "licenses",
+        "software",
+        "bill",
+        "of",
+        "materials"
+    ],
+    "author": "Guido Wilken <gwi42.undertone207@slmails.com>",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/gwi42/sbom-utils/issues"
+    },
+    "homepage": "https://github.com/gwi42/sbom-utils#readme",
+    "bin": {
+        "extract-licenses": "dist/extract_licenses.js",
+        "combine-sboms": "dist/combine_sboms.js",
+        "sbom-utils-extract-licenses": "dist/extract_licenses.js",
+        "sbom-utils-combine-sboms": "dist/combine_sboms.js"
+    },
+    "devDependencies": {
+        "@cyclonedx/cyclonedx-npm": "4.0.0",
+        "@types/node": "24.3.0",
+        "del-cli": "6.0.0",
+        "tsx": "4.20.4",
+        "typescript": "5.9.2"
+    }
+}

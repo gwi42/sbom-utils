@@ -1,0 +1,39 @@
+{
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "semi": false,
+    "useTabs": false,
+    "singleQuote": true,
+    "printWidth": 120,
+    "endOfLine": "lf",
+    "importOrder": [
+        "/^(?!(@mui/|@fontsource/|@/|\\./)).*[^(\\.less|\\.css|\\.png|\\.svg|\\.gif|\\.ico)]$/",
+        "^@mui/(.*)$",
+        "^@fontsource/(.*)$",
+        "^(.*)(\\.less|\\.css|\\.png|\\.svg|\\.jpg|\\.jpeg|\\.gif|\\.ico)$",
+        "^@/(.*)$",
+        "^[./]"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true,
+    "overrides": [
+        {
+            "files": "*.yml",
+            "options": {
+                "tabWidth": 2
+            }
+        },
+        {
+            "files": "*.jsonc",
+            "options": {
+                "trailingComma": "none"
+            }
+        },
+        {
+            "files": "*.code-workspace",
+            "options": {
+                "trailingComma": "none"
+            }
+        }
+    ]
+}

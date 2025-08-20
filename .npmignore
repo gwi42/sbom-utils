@@ -1,0 +1,10 @@
+*.ts
+*.py
+node_modules/
+dist/*.js.map
+!dist/*.js
+sbom.json
+sbom.md
+.prettier*
+tsconfig.json
+DEV.md
