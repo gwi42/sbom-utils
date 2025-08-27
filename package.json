@@ -1,6 +1,6 @@
 {
     "name": "@gwi42/sbom-utils",
-    "version": "1.0.4",
+    "version": "1.0.8",
     "description": "Two scripts for working with Software Bill of Materials (SBOM) files in CycloneDX or SPDX JSON formats",
     "scripts": {
         "clean": "del-cli dist gwi42*.tgz",
