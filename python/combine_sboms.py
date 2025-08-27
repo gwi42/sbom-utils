@@ -62,6 +62,43 @@ def get_metadata_from_sbom(sbom_data: Dict, sbom_format: str, debug: bool = Fals
     
     return name, version
 
+def sanitize_component(component: Dict, debug: bool = False) -> Dict:
+    sanitized = {
+        "type": component.get("type", "library"),
+        "name": component.get("name", "unnamed"),
+        "version": component.get("version", "unknown"),
+        "bom-ref": component.get("bom-ref", str(uuid.uuid4())),
+    }
+
+    licenses = []
+    for idx, lic in enumerate(component.get("licenses", [])):
+        if isinstance(lic, dict):
+            if "license" in lic and isinstance(lic["license"], dict):
+                lic_id = lic["license"].get("id")
+                if lic_id:
+                    licenses.append({"license": {"id": lic_id}})
+                else:
+                    if debug:
+                        print(f"⚠️ Skipping malformed license (missing id) in {sanitized['name']}@{sanitized['version']} [index {idx}]")
+            elif "expression" in lic:
+                expression = lic.get("expression")
+                if isinstance(expression, str):
+                    licenses.append({"expression": expression})
+                else:
+                    if debug:
+                        print(f"⚠️ Skipping malformed expression in {sanitized['name']}@{sanitized['version']} [index {idx}]")
+            else:
+                if debug:
+                    print(f"⚠️ Skipping malformed license object at index {idx} in {sanitized['name']}@{sanitized['version']}")
+        else:
+            if debug:
+                print(f"⚠️ Invalid license entry type at index {idx} in {sanitized['name']}@{sanitized['version']}")
+
+    if licenses:
+        sanitized["licenses"] = licenses
+
+    return sanitized
+
 def convert_spdx_to_cyclonedx_package(package: Dict, debug: bool = False) -> Dict:
     component = {
         "type": "library",  # Default type, as SPDX doesn't always specify
@@ -84,7 +121,7 @@ def convert_spdx_to_cyclonedx_package(package: Dict, debug: bool = False) -> Dic
         component["licenses"] = licenses
     return component
 
-def combine_sboms(sbom_files: List[str], project_name: str, project_version: str, debug: bool = False) -> Tuple[Dict, str, str]:
+def combine_sboms(sbom_files: List[str], project_name: str, project_version: str, debug: bool = False, trace: bool = False) -> Tuple[Dict, str, str]:
     combined_components: Dict[Tuple[str, str], Dict] = {}
     metadata_name = project_name
     metadata_version = project_version
@@ -116,10 +153,10 @@ def combine_sboms(sbom_files: List[str], project_name: str, project_version: str
                 version = component.get("version", "unknown")
                 key = (name, version)
                 if key not in combined_components:
-                    combined_components[key] = component
-                    if debug:
+                    combined_components[key] = sanitize_component(component, debug)
+                    if trace:
                         print(f"Added CycloneDX component: {name} {version} from {sbom_file}")
-                elif debug:
+                elif trace:
                     print(f"Skipped duplicate component: {name} {version} from {sbom_file}")
         
         elif sbom_format == "SPDX":
@@ -130,10 +167,10 @@ def combine_sboms(sbom_files: List[str], project_name: str, project_version: str
                 version = component["version"]
                 key = (name, version)
                 if key not in combined_components:
-                    combined_components[key] = component
-                    if debug:
+                    combined_components[key] = sanitize_component(component, debug)
+                    if trace:
                         print(f"Added converted SPDX package: {name} {version} from {sbom_file}")
-                elif debug:
+                elif trace:
                     print(f"Skipped duplicate package: {name} {version} from {sbom_file}")
     
     # Create combined CycloneDX SBOM
@@ -160,6 +197,7 @@ def combine_sboms(sbom_files: List[str], project_name: str, project_version: str
 
 def main():
     debug = False
+    trace = False
     project_name = ""
     project_version = ""
     
@@ -167,7 +205,11 @@ def main():
     if "--debug" in args:
         debug = True
         args.remove("--debug")
-    
+
+    if "--trace" in args:
+        trace = True
+        args.remove("--trace")
+
     if "--name" in args:
         name_index = args.index("--name")
         if name_index + 1 < len(args):
@@ -187,7 +229,7 @@ def main():
             sys.exit(1)
     
     if not args:
-        print("Usage: python combine_sboms.py [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...")
+        print("Usage: python combine_sboms.py [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...")
         sys.exit(1)
     
     sbom_files = args
@@ -197,7 +239,7 @@ def main():
             sys.exit(1)
     
     # Combine SBOMs
-    combined_sbom, metadata_name, metadata_version = combine_sboms(sbom_files, project_name, project_version, debug)
+    combined_sbom, metadata_name, metadata_version = combine_sboms(sbom_files, project_name, project_version, debug, trace)
     
     # Save combined SBOM
     output_file = "combined_sbom.json"

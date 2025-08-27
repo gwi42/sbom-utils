@@ -157,12 +157,13 @@ Combines multiple SBOM files (CycloneDX or SPDX JSON) into a single CycloneDX JS
 ### Syntax
 
 ```bash
-<command> [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
+<command> [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
 ```
 
 #### Options
 
--   `--debug`: Enable detailed logging (e.g., file reading, component additions, duplicates).
+-   `--debug`: Enable detailed logging (e.g., file reading).
+-   `--trace`: Enable detailed logging (e.g., component additions, duplicates).
 -   `--name <project_name>`: Set the project name in the combined SBOM's metadata (default: `Combined Project` or first SBOM's metadata name).
 -   `--version <version>`: Set the version in the combined SBOM's metadata (default: `1.0.0` or first SBOM's metadata version).
 -   `<sbom_file1> <sbom_file2> ...`: List of SBOM files to combine (at least one required).
@@ -228,7 +229,7 @@ The output `combined_sbom.json` is a CycloneDX JSON SBOM:
 #### Command
 
 ```bash
-python combine_sboms.py [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
+python combine_sboms.py [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
 ```
 
 ### Node.js Usage
@@ -236,13 +237,13 @@ python combine_sboms.py [--debug] [--name <project_name>] [--version <version>] 
 #### Command (Global Installation)
 
 ```bash
-combine-sboms [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
+combine-sboms [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
 ```
 
 #### npx Command (No Installation or Dev Dependency)
 
 ```bash
-npx -p @gwi42/sbom-utils@1.0.4 combine-sboms [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
+npx -p @gwi42/sbom-utils@1.0.4 combine-sboms [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...
 ```
 
 #### Project Dev Dependency

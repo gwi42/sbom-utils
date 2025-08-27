@@ -8,7 +8,7 @@ interface Component {
     name: string
     version: string
     'bom-ref'?: string
-    licenses?: Array<{ license: { id: string } }>
+    licenses?: Array<{ license: { id: string } } | { expression: string }>
 }
 
 interface SbomData {
@@ -40,6 +40,35 @@ interface CombinedSbom {
         component: { type: string; name: string; version: string }
     }
     components: Component[]
+}
+
+function sanitizeComponent(component: Component): Component {
+    return {
+        type: component.type,
+        name: component.name,
+        version: component.version,
+        'bom-ref': component['bom-ref'],
+        licenses: component.licenses
+            ?.map((lic, idx) => {
+                if ('license' in lic && lic.license?.id) {
+                    return {
+                        license: {
+                            id: lic.license.id,
+                        },
+                    }
+                } else if ('expression' in lic && typeof lic.expression === 'string') {
+                    return {
+                        expression: lic.expression,
+                    }
+                } else {
+                    console.warn(
+                        `⚠️ Skipping malformed license in component ${component.name}@${component.version} (index ${idx})`
+                    )
+                    return undefined
+                }
+            })
+            .filter((l): l is { license: { id: string } } | { expression: string } => !!l),
+    }
 }
 
 async function readSbom(sbomFile: string, debug: boolean = false): Promise<[SbomData, string]> {
@@ -151,7 +180,8 @@ async function combineSboms(
     sbomFiles: string[],
     projectName: string,
     projectVersion: string,
-    debug: boolean = false
+    debug: boolean = false,
+    trace: boolean = false
 ): Promise<[CombinedSbom, string, string]> {
     const combinedComponents: { [key: string]: Component } = {}
     let metadataName = projectName
@@ -175,7 +205,17 @@ async function combineSboms(
 
     for (const sbomFile of sbomFiles) {
         const [sbomData, sbomFormat] = await readSbom(sbomFile, debug)
+        if (debug) {
+            console.log(
+                `📄 ${sbomFile} contains components:`,
+                Array.isArray(sbomData.components),
+                sbomData.components?.length ?? 0
+            )
+        }
         if (Object.keys(sbomData).length === 0) {
+            if (debug) {
+                console.log(`📦 ${sbomFile} has ${sbomData.components?.length ?? 0} components`)
+            }
             continue
         }
 
@@ -185,12 +225,26 @@ async function combineSboms(
                 const name = component.name ?? 'unnamed'
                 const version = component.version ?? 'unknown'
                 const key = `${name}:${version}`
+
+                if (component.licenses) {
+                    for (const lic of component.licenses) {
+                        if ('acknowlegement' in (lic ?? {})) {
+                            console.log(
+                                `⚠️ Found unexpected 'acknowlegement' in component ${name}@${version} from ${sbomFile}`
+                            )
+                        }
+                        if (!lic) {
+                            console.warn(`⚠️ License object missing in component ${name}@${version} from ${sbomFile}`)
+                        }
+                    }
+                }
+
                 if (!combinedComponents[key]) {
-                    combinedComponents[key] = component
-                    if (debug) {
+                    combinedComponents[key] = sanitizeComponent(component)
+                    if (trace) {
                         console.log(`Added CycloneDX component: ${name} ${version} from ${sbomFile}`)
                     }
-                } else if (debug) {
+                } else if (trace) {
                     console.log(`Skipped duplicate component: ${name} ${version} from ${sbomFile}`)
                 }
             }
@@ -202,11 +256,11 @@ async function combineSboms(
                 const version = component.version
                 const key = `${name}:${version}`
                 if (!combinedComponents[key]) {
-                    combinedComponents[key] = component
-                    if (debug) {
+                    combinedComponents[key] = sanitizeComponent(component)
+                    if (trace) {
                         console.log(`Added converted SPDX package: ${name} ${version} from ${sbomFile}`)
                     }
-                } else if (debug) {
+                } else if (trace) {
                     console.log(`Skipped duplicate package: ${name} ${version} from ${sbomFile}`)
                 }
             }
@@ -238,6 +292,7 @@ async function combineSboms(
 
 async function main(): Promise<void> {
     let debug = false
+    let trace = false
     let projectName = ''
     let projectVersion = ''
 
@@ -245,6 +300,12 @@ async function main(): Promise<void> {
     if (args.includes('--debug')) {
         debug = true
         args.splice(args.indexOf('--debug'), 1)
+    }
+
+    if (args.includes('--trace')) {
+        debug = true
+        trace = true
+        args.splice(args.indexOf('--trace'), 1)
     }
 
     let nameIndex = args.indexOf('--name')
@@ -271,7 +332,7 @@ async function main(): Promise<void> {
 
     if (args.length === 0) {
         console.log(
-            'Usage: tsx combine_sboms.ts [--debug] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...'
+            'Usage: tsx combine_sboms.ts [--debug] [--trace] [--name <project_name>] [--version <version>] <sbom_file1> <sbom_file2> ...'
         )
         process.exit(1)
     }
@@ -288,7 +349,8 @@ async function main(): Promise<void> {
         sbomFiles,
         projectName,
         projectVersion,
-        debug
+        debug,
+        trace
     )
 
     const outputFile = 'combined_sbom.json'
