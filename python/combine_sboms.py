@@ -66,8 +66,14 @@ def sanitize_component(component: Dict, debug: bool = False) -> Dict:
     sanitized = {
         "type": component.get("type", "library"),
         "name": component.get("name", "unnamed"),
+        "group": component.get("group"),
         "version": component.get("version", "unknown"),
         "bom-ref": component.get("bom-ref", str(uuid.uuid4())),
+        "author": component.get("author"),
+        "description": component.get("description"),
+        "purl": component.get("purl"),
+        "externalReferences": component.get("externalReferences"),
+        "properties": component.get("properties"),
     }
 
     licenses = []

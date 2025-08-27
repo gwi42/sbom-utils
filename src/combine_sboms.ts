@@ -6,9 +6,15 @@ import { readFile, writeFile } from 'fs/promises'
 interface Component {
     type: string
     name: string
+    group?: string
     version: string
     'bom-ref'?: string
+    author?: string
+    description?: string
     licenses?: Array<{ license: { id: string } } | { expression: string }>
+    purl?: string
+    externalReferences?: Array<{ url: string; type: string; comment: string }>
+    properties?: Array<{ name: string; value: string }>
 }
 
 interface SbomData {
@@ -46,8 +52,14 @@ function sanitizeComponent(component: Component): Component {
     return {
         type: component.type,
         name: component.name,
+        group: component.group,
         version: component.version,
         'bom-ref': component['bom-ref'],
+        author: component.author,
+        description: component.description,
+        purl: component['purl'],
+        externalReferences: component.externalReferences,
+        properties: component.properties,
         licenses: component.licenses
             ?.map((lic, idx) => {
                 if ('license' in lic && lic.license?.id) {
